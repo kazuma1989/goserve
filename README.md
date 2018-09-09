@@ -4,7 +4,7 @@
 
 It is just a small single file with no configuration but gives your HTMLs the power of `http:` protocol instead of `file:` protocol.
 
-Place a [**goserve** binary](blob/master/bin/goserve-mac) into your directory and run to show your HTMLs under the directory.
+Place a [**goserve** binary](bin/goserve-mac) into your directory and run to show your HTMLs under the directory.
 
 BEFORE (without **goserve**):
 
