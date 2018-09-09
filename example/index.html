@@ -1,0 +1,15 @@
+<pre id="root"></pre>
+
+<script>
+  const root = document.getElementById('root');
+
+  fetch('stub.json')
+    .then(resp => resp.json())
+    .then(json => {
+      root.textContent = JSON.stringify(json, null, 2);
+    })
+    .catch(err => {
+      console.error(err);
+      root.textContent = JSON.stringify(err.message, null, 2);
+    });
+</script>
