@@ -2,7 +2,7 @@
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
 
 # Run `make` to do cross compile.
-all: bin/goserve bin/goserve-mac bin/goserve.exe
+all: bin/goserve bin/goserve-mac bin/goserve.exe bin/goserve-32.exe
 
 # For 64-bit OSs only.
 bin/goserve:
@@ -11,6 +11,8 @@ bin/goserve-mac:
 	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve-mac
 bin/goserve.exe:
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve.exe
+bin/goserve-32.exe:
+	GOOS=windows GOARCH=386   go build $(LDFLAGS) -o bin/goserve-32.exe
 
 # Run `make clean` to update.
 clean:
