@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/pkg/browser"
 )
 
 type jsonHandler struct {
@@ -48,5 +50,6 @@ func main() {
 	}
 	http.Handle("/", h)
 
+	browser.OpenURL("http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
