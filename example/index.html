@@ -3,7 +3,7 @@
 <script>
   const root = document.getElementById('root');
 
-  fetch('stub.json')
+  fetch('/api/message')
     .then(resp => resp.json())
     .then(json => {
       root.textContent = JSON.stringify(json, null, 2);
