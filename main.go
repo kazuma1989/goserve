@@ -33,13 +33,14 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var data map[string]string
+
 	raw, err := ioutil.ReadFile("./routes.json")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+	} else {
+		json.Unmarshal(raw, &data)
 	}
-
-	var data map[string]string
-	json.Unmarshal(raw, &data)
 
 	h := &jsonHandler{
 		defaultHandler: http.FileServer(http.Dir("./")),
