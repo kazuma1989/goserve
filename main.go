@@ -2,12 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/browser"
+)
+
+var (
+	// Version is given on compile time.
+	Version string
 )
 
 type jsonHandler struct {
@@ -35,13 +41,14 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var data map[string]string
+	fmt.Printf("goserve %s", Version)
+	fmt.Println()
 
-	raw, err := ioutil.ReadFile("./routes.json")
-	if err != nil {
-		log.Println(err)
-	} else {
+	var data map[string]string
+	if raw, err := ioutil.ReadFile("./routes.json"); err == nil {
 		json.Unmarshal(raw, &data)
+	} else {
+		log.Println(err)
 	}
 
 	h := &jsonHandler{
@@ -51,5 +58,7 @@ func main() {
 	http.Handle("/", h)
 
 	browser.OpenURL("http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	err := http.ListenAndServe(":8080", nil)
+	log.Fatal(err)
 }
