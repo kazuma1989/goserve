@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -8,9 +10,21 @@ import (
 
 type jsonHandler struct {
 	defaultHandler http.Handler
+	routes         map[string]string
 }
 
 func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h.routes != nil && h.routes[r.URL.Path] != "" {
+		file := h.routes[r.URL.Path]
+
+		if strings.HasSuffix(file, ".json") {
+			w.Header().Set("Content-Type", "application/json")
+		}
+
+		http.ServeFile(w, r, file)
+		return
+	}
+
 	if strings.HasSuffix(r.URL.Path, ".json") {
 		w.Header().Set("Content-Type", "application/json")
 	}
@@ -19,7 +33,18 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	h := &jsonHandler{http.FileServer(http.Dir("./"))}
+	raw, err := ioutil.ReadFile("./routes.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var data map[string]string
+	json.Unmarshal(raw, &data)
+
+	h := &jsonHandler{
+		defaultHandler: http.FileServer(http.Dir("./")),
+		routes:         data,
+	}
 	http.Handle("/", h)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
