@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,19 +20,22 @@ var (
 
 type jsonHandler struct {
 	defaultHandler http.Handler
-	routes         map[string]string
+	routes         map[*regexp.Regexp]string
 }
 
 func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if h.routes != nil && h.routes[r.URL.Path] != "" {
-		file := h.routes[r.URL.Path]
+	for from, to := range h.routes {
+		if from.MatchString(r.URL.Path) {
+			file := from.ReplaceAllString(r.URL.Path, to)
+			log.Println(file)
 
-		if strings.HasSuffix(file, ".json") {
-			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(file, ".json") {
+				w.Header().Set("Content-Type", "application/json")
+			}
+
+			http.ServeFile(w, r, file)
+			return
 		}
-
-		http.ServeFile(w, r, file)
-		return
 	}
 
 	if strings.HasSuffix(r.URL.Path, ".json") {
@@ -52,9 +56,17 @@ func main() {
 		log.Println(err)
 	}
 
+	routes := make(map[*regexp.Regexp]string)
+	for k, v := range data {
+		r, err := regexp.Compile(k)
+		if err == nil {
+			routes[r] = v
+		}
+	}
+
 	h := &jsonHandler{
 		defaultHandler: http.FileServer(http.Dir("./")),
-		routes:         data,
+		routes:         routes,
 	}
 	http.Handle("/", h)
 
