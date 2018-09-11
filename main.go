@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/browser"
 )
@@ -57,8 +58,15 @@ func main() {
 	}
 	http.Handle("/", h)
 
-	browser.OpenURL("http://localhost:8080")
+	browserOpen := time.AfterFunc(500*time.Millisecond, func() {
+		browser.OpenURL("http://localhost:8080")
+	})
 
-	err := http.ListenAndServe(":8080", nil)
-	log.Fatal(err)
+	err := make(chan error)
+	go func() {
+		err <- http.ListenAndServe(":8080", nil)
+	}()
+
+	log.Fatal(<-err)
+	browserOpen.Stop()
 }
