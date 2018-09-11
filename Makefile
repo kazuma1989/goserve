@@ -9,13 +9,13 @@ all: bin/goserve bin/goserve-mac bin/goserve.exe bin/goserve-32.exe
 
 # For Linux 64-bit, macOS 64-bit, Windows 32/64-bit.
 bin/goserve:
-	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve
+	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve        && upx bin/goserve
 bin/goserve-mac:
-	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve-mac
+	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve-mac    && upx bin/goserve-mac
 bin/goserve.exe:
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve.exe
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o bin/goserve.exe    && upx bin/goserve.exe
 bin/goserve-32.exe:
-	GOOS=windows GOARCH=386   go build $(LDFLAGS) -o bin/goserve-32.exe
+	GOOS=windows GOARCH=386   go build $(LDFLAGS) -o bin/goserve-32.exe && upx bin/goserve-32.exe
 
 # Run `make clean` to force updating artifacts.
 clean:

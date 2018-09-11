@@ -56,3 +56,16 @@ Add `routes.json` in the directory where **goserve** exists.
 ```
 
 You can see the content of `stub.json` at `http://localhost:8080/api/message` in addition to `http://localhost:8080/stub.json`.
+
+
+
+
+# Development
+
+## Requirements
+
+To build **goserve** from the source, you need:
+
+- [The Go Programming Language](https://golang.org/)
+- [Make - GNU Project - Free Software Foundation](https://www.gnu.org/software/make/)
+- [UPX: the Ultimate Packer for eXecutables - Homepage](https://upx.github.io/)
