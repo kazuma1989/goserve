@@ -1,6 +1,6 @@
 {
   "port": 8000,
   "routes": {
-    "/api/(.*)": "stub/$1.json"
+    "/api/(.*)": "$1.json"
   }
 }
