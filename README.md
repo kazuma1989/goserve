@@ -8,17 +8,17 @@ It is just a small single file with no configuration but gives your HTMLs the po
 
 ## Basic usage
 
-Place a [**goserve** binary](bin/goserve-mac) into your directory and run to show your HTMLs under the directory.
+Place a [**goserve** binary](bin/) into your directory and run to show your HTMLs under the directory.
 
 BEFORE (without **goserve**):
 
 ```diff
  example/
  ├── index.html
- └── stub.json
+ └── message.json
 ```
 
-Run `open index.html`, you will see:
+Run `open index.html` (or just double click to open `index.html`), you will see:
 
 ![](doc/before.png)
 
@@ -28,34 +28,50 @@ AFTER (with **goserve** for macOS):
  example/
 +├── goserve-mac
  ├── index.html
- └── stub.json
+ └── message.json
 ```
 
-Run `./goserve-mac`, you will see:
+Run `./goserve-mac` (or just double click to start `goserve.exe` when you use Windows), you will see:
 
 ![](doc/after.png)
 
 
 
-## Routing (mapping between a URL and a file path)
+## Config
 
-Add `routes.json` in the directory where **goserve** exists.
+### Routing (mapping between a URL and a file path)
+
+Add `goserve.json` in the directory where **goserve** exists.
 
 ```diff
  example/
++├── goserve.json
  ├── goserve-mac
  ├── index.html
-+├── routes.json
- └── stub.json
+ └── message.json
 ```
 
 ```json
 {
-  "/api/message": "stub.json"
+  "routes": {
+    "/api/(.*)": "$1.json"
+  }
 }
 ```
 
-You can see the content of `stub.json` at `http://localhost:8080/api/message` in addition to `http://localhost:8080/stub.json`.
+You can see the content of `message.json` at `http://localhost:8080/api/message` in addition to `http://localhost:8080/message.json`.
+
+
+### Change port
+
+```diff
+ {
++  "port": 8000,
+   "routes": {
+     "/api/(.*)": "$1.json"
+   }
+ }
+```
 
 
 
