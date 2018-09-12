@@ -21,16 +21,27 @@ var (
 
 type jsonHandler struct {
 	defaultHandler http.Handler
-	routes         map[*regexp.Regexp]string
+	route          map[*regexp.Regexp]string
+	redirect       map[*regexp.Regexp]string
 }
 
 type goserveConfig struct {
-	Port   uint16
-	Routes map[string]string
+	Port     uint16
+	Route    map[string]string
+	Redirect map[string]string
 }
 
 func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for from, to := range h.routes {
+	for from, to := range h.redirect {
+		if from.MatchString(r.URL.Path) {
+			destination := from.ReplaceAllString(r.URL.Path, to)
+
+			http.Redirect(w, r, destination, http.StatusFound)
+			return
+		}
+	}
+
+	for from, to := range h.route {
 		if from.MatchString(r.URL.Path) {
 			file := from.ReplaceAllString(r.URL.Path, to)
 			log.Println(file)
@@ -62,19 +73,28 @@ func main() {
 		log.Println(err)
 	}
 
-	routes := make(map[*regexp.Regexp]string)
-	for k, v := range config.Routes {
+	route := make(map[*regexp.Regexp]string)
+	for k, v := range config.Route {
 		r, err := regexp.Compile(k)
 		if err == nil {
-			routes[r] = v
+			route[r] = v
 		}
 	}
 
-	h := &jsonHandler{
-		defaultHandler: http.FileServer(http.Dir("./")),
-		routes:         routes,
+	redirect := make(map[*regexp.Regexp]string)
+	for k, v := range config.Redirect {
+		r, err := regexp.Compile(k)
+		if err == nil {
+			redirect[r] = v
+		}
 	}
-	http.Handle("/", h)
+
+	handler := &jsonHandler{
+		defaultHandler: http.FileServer(http.Dir("./")),
+		route:          route,
+		redirect:       redirect,
+	}
+	http.Handle("/", handler)
 
 	var port string
 	if config.Port != 0 {

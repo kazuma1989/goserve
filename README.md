@@ -53,7 +53,7 @@ Add `goserve.json` in the directory where **goserve** exists.
 
 ```json
 {
-  "routes": {
+  "route": {
     "/api/(.*)": "$1.json"
   }
 }
@@ -67,7 +67,22 @@ You can see the content of `message.json` at `http://localhost:8080/api/message`
 ```diff
  {
 +  "port": 8000,
-   "routes": {
+   "route": {
+     "/api/(.*)": "$1.json"
+   }
+ }
+```
+
+
+### Redirect
+
+```diff
+ {
+   "port": 8000,
++  "redirect": {
++    "/home": "/"
++  },
+   "route": {
      "/api/(.*)": "$1.json"
    }
  }
