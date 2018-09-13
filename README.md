@@ -89,6 +89,26 @@ You can see the content of `message.json` at `http://localhost:8080/api/message`
 ```
 
 
+### Routing based on a posted JSON
+
+Refer to JSON values by [JSONPath](http://goessner.net/articles/JsonPath/) syntax.
+
+```diff
+ {
+   "port": 8000,
+   "redirect": {
+     "/home": "/"
+   },
+   "route": {
+     "/api/(.*)": "$1.json",
++    "/post": "{$.name}.json"
+   }
+ }
+```
+
+Posting `{"name":"foo"}` to `/post`, you get the content of `foo.json`.
+
+
 
 
 # Development

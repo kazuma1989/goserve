@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/oliveagle/jsonpath"
 	"github.com/pkg/browser"
 )
 
@@ -31,7 +33,19 @@ type goserveConfig struct {
 	Redirect map[string]string
 }
 
+var jpathPattern = regexp.MustCompile(`{\$\..+?}`)
+
 func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var jsonData map[string]interface{}
+	if mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil {
+		log.Println(err)
+	} else if mimeType == "application/json" {
+		body, _ := ioutil.ReadAll(r.Body)
+		if err := json.Unmarshal(body, &jsonData); err != nil {
+			log.Println(err)
+		}
+	}
+
 	for from, to := range h.redirect {
 		if from.MatchString(r.URL.Path) {
 			destination := from.ReplaceAllString(r.URL.Path, to)
@@ -43,7 +57,20 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for from, to := range h.route {
 		if from.MatchString(r.URL.Path) {
-			file := from.ReplaceAllString(r.URL.Path, to)
+			file := jpathPattern.ReplaceAllStringFunc(from.ReplaceAllString(r.URL.Path, to), func(match string) string {
+				if jsonData == nil {
+					return ""
+				}
+
+				jpath := strings.Trim(match, "{}")
+				res, err := jsonpath.JsonPathLookup(jsonData, jpath)
+				if err != nil {
+					log.Println(err)
+					return ""
+				}
+
+				return fmt.Sprintf("%v", res)
+			})
 			log.Println(file)
 
 			if strings.HasSuffix(file, ".json") {

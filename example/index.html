@@ -3,6 +3,7 @@
 <script>
   const root = document.getElementById('root');
 
+  // GET example
   fetch('/api/message')
     .then(resp => resp.json())
     .then(json => {
@@ -12,4 +13,18 @@
       console.error(err);
       root.textContent = JSON.stringify(err.message, null, 2);
     });
+
+  // POST example
+  fetch('/post', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      name: 'message',
+    }),
+  })
+    .then(resp => resp.json())
+    .then(console.log)
+    .catch(console.error);
 </script>

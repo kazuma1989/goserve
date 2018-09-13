@@ -4,6 +4,7 @@
     "/home": "/"
   },
   "route": {
-    "/api/(.*)": "$1.json"
+    "/api/(.*)": "$1.json",
+    "/post": "{$.name}.json"
   }
 }
