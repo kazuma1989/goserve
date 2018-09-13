@@ -33,19 +33,26 @@ type goserveConfig struct {
 	Redirect map[string]string
 }
 
+type postedJSON map[string]interface{}
+
+func (json *postedJSON) Lookup(path string) string {
+	if json == nil {
+		return ""
+	}
+
+	jpath := strings.Trim(path, "{}")
+	res, err := jsonpath.JsonPathLookup(*json, jpath)
+	if err != nil {
+		log.Println("JsonPathLookup error:", jpath, err)
+		return ""
+	}
+
+	return fmt.Sprintf("%v", res)
+}
+
 var jpathPattern = regexp.MustCompile(`{\$\..+?}`)
 
 func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var jsonData map[string]interface{}
-	if mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil {
-		log.Println(err)
-	} else if mimeType == "application/json" {
-		body, _ := ioutil.ReadAll(r.Body)
-		if err := json.Unmarshal(body, &jsonData); err != nil {
-			log.Println(err)
-		}
-	}
-
 	for from, to := range h.redirect {
 		if from.MatchString(r.URL.Path) {
 			destination := from.ReplaceAllString(r.URL.Path, to)
@@ -55,23 +62,33 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var replacer func(string) string
+	switch r.Method {
+	case http.MethodPost:
+		mimeType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil {
+			log.Println("ParseMediaType error:", err)
+		} else if mimeType == "application/json" {
+			body, _ := ioutil.ReadAll(r.Body)
+
+			var jsonData postedJSON
+			if err := json.Unmarshal(body, &jsonData); err != nil {
+				log.Println("Unmarshal error:", string(body), err)
+			} else {
+				replacer = jsonData.Lookup
+			}
+		}
+	}
+	if replacer == nil {
+		replacer = func(_ string) string {
+			return ""
+		}
+	}
+
 	for from, to := range h.route {
 		if from.MatchString(r.URL.Path) {
-			file := jpathPattern.ReplaceAllStringFunc(from.ReplaceAllString(r.URL.Path, to), func(match string) string {
-				if jsonData == nil {
-					return ""
-				}
-
-				jpath := strings.Trim(match, "{}")
-				res, err := jsonpath.JsonPathLookup(jsonData, jpath)
-				if err != nil {
-					log.Println(err)
-					return ""
-				}
-
-				return fmt.Sprintf("%v", res)
-			})
-			log.Println(file)
+			file := jpathPattern.ReplaceAllStringFunc(from.ReplaceAllString(r.URL.Path, to), replacer)
+			log.Println(r.URL.Path, "is mapped to", file)
 
 			if strings.HasSuffix(file, ".json") {
 				w.Header().Set("Content-Type", "application/json")
@@ -97,7 +114,7 @@ func main() {
 	if raw, err := ioutil.ReadFile("./goserve.json"); err == nil {
 		json.Unmarshal(raw, &config)
 	} else {
-		log.Println(err)
+		log.Println("Unmarshal error:", "goserve.json", err)
 	}
 
 	route := make(map[*regexp.Regexp]string)
