@@ -28,7 +28,8 @@ type JSONHandler struct {
 	redirect       map[*regexp.Regexp]string
 }
 
-type goserveConfig struct {
+// Config represents a server congig.
+type Config struct {
 	Port     uint16
 	Route    map[string]string
 	Redirect map[string]string
@@ -108,7 +109,7 @@ func (h *JSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewJSONHandler constructs a new JSONHandler.
-func NewJSONHandler(config goserveConfig) *JSONHandler {
+func NewJSONHandler(config Config) *JSONHandler {
 	route := make(map[*regexp.Regexp]string)
 	for k, v := range config.Route {
 		r, err := regexp.Compile(k)
@@ -132,22 +133,8 @@ func NewJSONHandler(config goserveConfig) *JSONHandler {
 	}
 }
 
-const goserveJSON = "goserve.json"
-const host = "http://localhost"
-
-func main() {
-	fmt.Printf("goserve %s", Version)
-	fmt.Println()
-
-	var config goserveConfig
-	if raw, err := ioutil.ReadFile(goserveJSON); err == nil {
-		if err := json.Unmarshal(raw, &config); err != nil {
-			log.Println("Unmarshal error:", goserveJSON, err)
-		}
-	} else {
-		log.Println(err)
-	}
-
+// NewServer constructs a new http.Server configured with a given config.
+func NewServer(config Config) *http.Server {
 	var port string
 	if config.Port != 0 {
 		port = strconv.Itoa(int(config.Port))
@@ -157,13 +144,36 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", NewJSONHandler(config))
-	server := http.Server{
+
+	return &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
 	}
+}
+
+const configJSON = "goserve.json"
+const host = "http://localhost"
+
+func main() {
+	fmt.Printf("goserve %s", Version)
+	fmt.Println()
+
+	var config Config
+	if raw, err := ioutil.ReadFile(configJSON); err == nil {
+		if err := json.Unmarshal(raw, &config); err != nil {
+			log.Println("Unmarshal error:", configJSON, err)
+		}
+	} else {
+		log.Println(err)
+	}
+
+	server := NewServer(config)
 
 	time.AfterFunc(500*time.Millisecond, func() {
-		browser.OpenURL(host + ":" + port)
+		err := browser.OpenURL(host + server.Addr)
+		if err != nil {
+			log.Println(err)
+		}
 	})
 
 	err := server.ListenAndServe()
