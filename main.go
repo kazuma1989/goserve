@@ -21,7 +21,8 @@ var (
 	Version string
 )
 
-type jsonHandler struct {
+// JSONHandler is a handler which returns JSON with "Content-Type: application/json".
+type JSONHandler struct {
 	defaultHandler http.Handler
 	route          map[*regexp.Regexp]string
 	redirect       map[*regexp.Regexp]string
@@ -52,7 +53,7 @@ func (json *postedJSON) Lookup(path string) string {
 
 var jpathPattern = regexp.MustCompile(`{\$\..+?}`)
 
-func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *JSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for from, to := range h.redirect {
 		if from.MatchString(r.URL.Path) {
 			destination := from.ReplaceAllString(r.URL.Path, to)
@@ -88,7 +89,7 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for from, to := range h.route {
 		if from.MatchString(r.URL.Path) {
 			file := jpathPattern.ReplaceAllStringFunc(from.ReplaceAllString(r.URL.Path, to), replacer)
-			log.Println(r.URL.Path, "is mapped to", file)
+			log.Println(r.URL.Path, "->", file)
 
 			if strings.HasSuffix(file, ".json") {
 				w.Header().Set("Content-Type", "application/json")
@@ -106,17 +107,8 @@ func (h *jsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.defaultHandler.ServeHTTP(w, r)
 }
 
-func main() {
-	fmt.Printf("goserve %s", Version)
-	fmt.Println()
-
-	var config goserveConfig
-	if raw, err := ioutil.ReadFile("./goserve.json"); err == nil {
-		json.Unmarshal(raw, &config)
-	} else {
-		log.Println("Unmarshal error:", "goserve.json", err)
-	}
-
+// NewJSONHandler constructs a new JSONHandler.
+func NewJSONHandler(config goserveConfig) *JSONHandler {
 	route := make(map[*regexp.Regexp]string)
 	for k, v := range config.Route {
 		r, err := regexp.Compile(k)
@@ -133,12 +125,28 @@ func main() {
 		}
 	}
 
-	handler := &jsonHandler{
+	return &JSONHandler{
 		defaultHandler: http.FileServer(http.Dir("./")),
 		route:          route,
 		redirect:       redirect,
 	}
-	http.Handle("/", handler)
+}
+
+const goserveJSON = "goserve.json"
+const host = "http://localhost"
+
+func main() {
+	fmt.Printf("goserve %s", Version)
+	fmt.Println()
+
+	var config goserveConfig
+	if raw, err := ioutil.ReadFile(goserveJSON); err == nil {
+		if err := json.Unmarshal(raw, &config); err != nil {
+			log.Println("Unmarshal error:", goserveJSON, err)
+		}
+	} else {
+		log.Println(err)
+	}
 
 	var port string
 	if config.Port != 0 {
@@ -146,15 +154,18 @@ func main() {
 	} else {
 		port = "8080"
 	}
-	browserOpen := time.AfterFunc(500*time.Millisecond, func() {
-		browser.OpenURL("http://localhost:" + port)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", NewJSONHandler(config))
+	server := http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
+
+	time.AfterFunc(500*time.Millisecond, func() {
+		browser.OpenURL(host + ":" + port)
 	})
 
-	err := make(chan error)
-	go func() {
-		err <- http.ListenAndServe(":"+port, nil)
-	}()
-
-	log.Fatal(<-err)
-	browserOpen.Stop()
+	err := server.ListenAndServe()
+	log.Fatal(err)
 }
